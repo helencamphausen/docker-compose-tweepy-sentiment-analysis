@@ -1,15 +1,21 @@
 version: '3'
 services:
+    mongodb:
+      image: mongo
+      ports:
+        - 8081:8081
   tweet_collector:
     build: tweet_collector/
     volumes:
     - ./tweet_collector/:/code
     links:
     - mongodb
-  mongodb:
-    image: mongo
+    depends_on:
+    - mongodb
+  postgresdb:
+    image: postgres
     ports:
-      - 8081:8081
+      - 5555:5432
   etl_job:
     build: etl_job/
     volumes:
@@ -17,11 +23,12 @@ services:
     links:
     - mongodb
     - postgresdb
-  postgresdb:
-    image: postgres
-    ports:
-      - 5555:5432
+    depends_on:
+    - mongodb
+    - postgresdb
   slack_bot:
     build: slack_bot/
     volumes:
     - ./slack_bot/:/code
+    depends_on:
+    - postgresdb
