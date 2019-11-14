@@ -11,10 +11,9 @@ import json
 
 from tweepy import OAuthHandler, Stream
 from tweepy.streaming import StreamListener
-
-import pandas as pd
-
 from pymongo import MongoClient
+
+import time
 
 
 client = MongoClient('mongodb')
@@ -29,14 +28,14 @@ def authenticate():
     auth.set_access_token(cfg['ACCESS_TOKEN'], cfg['ACCESS_TOKEN_SECRET'])
     return auth
 
-def write_tweet(tweet_dict):
-
-    df = pd.DataFrame(index = [1], data=tweet_dict)
-
-    with open('test.csv', 'a') as f:
-        df.to_csv(f, mode='a', header=f.tell()==0)
-
-#    df.to_csv('test.csv', mode='a', header=None)
+#def write_tweet(tweet_dict):
+#
+#    df = pd.DataFrame(index = [1], data=tweet_dict)
+#
+#    with open('test.csv', 'a') as f:
+#        df.to_csv(f, mode='a', header=f.tell()==0)
+#
+##    df.to_csv('test.csv', mode='a', header=None)
 
 
 def load_into_mongo(tweet_dict):
@@ -54,24 +53,29 @@ class TwitterStreamer(StreamListener):
             in real-time. It loads the json into a mongodb """
 
         tweet = json.loads(data)
-
-        if 'extended_tweet' in tweet:
-            text = tweet['extended_tweet']['full_text']
-        else:
-            text = tweet['text']
-
-        if tweet['text'].startswith('RT'):
+        print(len(tweet))
+        
+        if 'text' in tweet.keys():
             
-            tweet_dict = {'created_at': tweet['created_at'],
-                     'id': tweet['id_str'],
-                     'text': text,
-                     'username': tweet['user']['screen_name'],
-                     'followers':tweet['user']['followers_count'],
-                     'retweets': tweet['retweet_count'],
-                     'location': tweet['user']['location'],
-                     'raw' : tweet}
+            if 'extended_tweet' in tweet:
+                text = tweet['extended_tweet']['full_text']
+            else:
+                text = tweet['text']
     
-            load_into_mongo(tweet_dict)
+            if not tweet['text'].startswith('RT') and text != '':
+                
+                tweet_dict = {'created_at': tweet['created_at'],
+                         'id': tweet['id_str'],
+                         'text': text,
+                         'username': tweet['user']['screen_name'],
+                         'followers':tweet['user']['followers_count'],
+                         'retweets': tweet['retweet_count'],
+                         'location': tweet['user']['location'],
+                         'raw' : tweet,
+                         'timestamp' : time.asctime()}
+        
+                load_into_mongo(tweet_dict)
+                print('tweet_uploaded')
 
                
     def on_error(self,status):
@@ -98,4 +102,4 @@ if __name__ == '__main__':
 
     stream= Stream(auth, streamer)
 
-    stream.filter(track = ['Trump'], languages = ['en'])
+    stream.filter(track = ['Trump'],languages = ['en'])

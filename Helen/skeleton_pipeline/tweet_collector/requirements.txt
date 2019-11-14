@@ -1,5 +1,3 @@
-config
-json
+json5
 tweepy
-pandas
 pymongo
