@@ -39,7 +39,7 @@ def authenticate():
 
 
 def load_into_mongo(tweet_dict):
-    
+
     """ create mongo database and collection"""
 
     db.trump_tweets.insert(tweet_dict)
@@ -49,21 +49,21 @@ class TwitterStreamer(StreamListener):
 
     def on_data(self, data):
 
-        """ Whatever we put in this method defines what is donw with every single tweet as it is intercepted
+        """ Whatever we put in this method defines what is done with every single tweet as it is intercepted
             in real-time. It loads the json into a mongodb """
 
         tweet = json.loads(data)
         print(len(tweet))
-        
+
         if 'text' in tweet.keys():
-            
+
             if 'extended_tweet' in tweet:
                 text = tweet['extended_tweet']['full_text']
             else:
                 text = tweet['text']
-    
+
             if not tweet['text'].startswith('RT') and text != '':
-                
+
                 tweet_dict = {'created_at': tweet['created_at'],
                          'id': tweet['id_str'],
                          'text': text,
@@ -75,11 +75,11 @@ class TwitterStreamer(StreamListener):
                          'timestamp' : time.asctime(),
                          'sentimented':0
                          }
-        
+
                 load_into_mongo(tweet_dict)
                 print('tweet_uploaded')
 
-               
+
     def on_error(self,status):
 
         """ If rate-limiting occurs """
