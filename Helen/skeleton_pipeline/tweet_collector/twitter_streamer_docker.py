@@ -72,7 +72,9 @@ class TwitterStreamer(StreamListener):
                          'retweets': tweet['retweet_count'],
                          'location': tweet['user']['location'],
                          'raw' : tweet,
-                         'timestamp' : time.asctime()}
+                         'timestamp' : time.asctime(),
+                         'sentimented':0
+                         }
         
                 load_into_mongo(tweet_dict)
                 print('tweet_uploaded')

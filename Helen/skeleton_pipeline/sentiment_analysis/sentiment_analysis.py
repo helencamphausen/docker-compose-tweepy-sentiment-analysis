@@ -22,12 +22,8 @@ HOST = 'postgresdb'
 PORT = '5432'
 DBNAME = 'twitter'
 
+
 client = MongoClient('mongodb')
-db=client.twitter
-mongodb='mongodb'
-
-
-client = MongoClient(mongodb)
 db = client.twitter
 collection = db.trump_tweets
 print('connect_mongo_done')
@@ -40,7 +36,7 @@ print('connect_mongo_done')
 
 
 def extract_mongodb(collection):
-    result = collection.find({},{"created_at": "$created_at","location": "$location","text": "$text","followers":"$followers"})
+    result = collection.find({'sentimented': 0},{"created_at": "$created_at","location": "$location","text": "$text","followers":"$followers"})
     print('extract_mongo_done')
     result_list = list(result)
     return result_list
@@ -48,6 +44,14 @@ def extract_mongodb(collection):
 def create_df(result_list):
     df = pd.DataFrame(result_list)
     df['clean_text'] = df['text'].replace('!!!!','!!!',regex=True)
+    
+    for index in df.index:
+            row = df.loc[index]
+            collection.update_one(
+                {'_id': row['_id']},
+                {'$set': {'sentimented': 1}},
+                upsert=False)
+    
     print('create_df_done')
     return df
 
@@ -68,12 +72,12 @@ def compound_sentiment(df):
 
 def load_sql(df):
     conn_string = f'postgres://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}'
-    twitter_db = create_engine(conn_string)
-    df.drop(df.columns[0], axis=1).to_sql('trump_tweets', twitter_db, index=False, if_exists="append", dtype = {'created_at' : sqlalchemy.DateTime()})
+    twitter_db = create_engine(conn_string, client_encoding='utf-8')
+    # encoding="utf8"
+    df.drop(df.columns[0], axis=1).to_sql('trump_tweets_excl_dup', twitter_db, index=False, if_exists="append", dtype = {'created_at' : sqlalchemy.DateTime()})
     print('Done_loaded_to_sql')
 
-# , dtype={'created_at': datetime()}
-    
+
 while True:
     result_list = extract_mongodb(db.trump_tweets)
     df = create_df(result_list)
