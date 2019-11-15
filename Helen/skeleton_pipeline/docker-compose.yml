@@ -1,0 +1,37 @@
+version: '3'
+services:
+  mongodb:
+      image: mongo
+      ports:
+      - 8081:8081
+      - "27017:27017"
+  tweet_collector:
+    build: tweet_collector/
+    volumes:
+    - ./tweet_collector/:/code 
+  postgresdb:
+    image: postgres:12.0
+    ports:
+    - "5555:5432"
+    environment:
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+    - POSTGRES_DB=twitter
+  sentiment_analysis:
+    build: sentiment_analysis/
+    volumes:
+    - ./sentiment_analysis/:/code
+    links:
+    - mongodb
+    - postgresdb
+    depends_on:
+    - mongodb
+    - postgresdb
+  flask_app:
+    build: flask_app/
+    volumes:
+    - ./flask_app/:/code
+    ports: 
+    - "5000:5000"
+    depends_on:
+    - postgresdb
